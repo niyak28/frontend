@@ -46,15 +46,15 @@ const styles = {
     minHeight: 'calc(100vh - 64px - 16px)',
   },
   leftColumn: {
-    flex: '1', // Takes up 1 part of the space
+    flex: '1',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: '180px',
+    minWidth: '360px',
     paddingLeft: '6px',
     paddingRight: '6px',
-    minHeight: 0, // allow flex child to shrink
+    minHeight: 0,
   },
   rightPanelContainer: {
     flex: '2', // Takes up 2 parts of the space (wider than the duck)
@@ -107,33 +107,77 @@ const Header = () => (
 );
 
 // 2. Left Column (Duck & Speech Bubble)
+// 2. Left Column (Duck & Speech Bubble)
 const DuckArea = () => (
   <div style={styles.leftColumn}>
     {/* Speech Bubble */}
-    <div style={{
-      backgroundColor: 'white',
-      color: 'black',
-      padding: '16px',
-      borderRadius: '36px',
-      marginBottom: '6px',
-      width: '76%',
-      maxWidth: '340px',
-      textAlign: 'center',
-      boxSizing: 'border-box',
-    }}>
-      Quack! Describe your bug to me.
+    <div
+      style={{
+        position: 'relative',
+        width: '88%',
+        maxWidth: '560px',
+        aspectRatio: '3 / 1.25',
+        marginBottom: '-35px',
+        transform: 'translate(-45px, 28px)',
+      }}
+    >
+      <img
+        src="/icons/speech-bubble.png"
+        alt="Speech bubble"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          display: 'block',
+        }}
+      />
+
+      <p
+        style={{
+          position: 'absolute',
+          inset: 0,
+          margin: 0,
+          padding: '8% 12% 12% 12%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'black',
+          fontSize: 'clamp(16px, 2.2vw, 28px)',
+          lineHeight: '1.15',
+          textAlign: 'center',
+          boxSizing: 'border-box',
+        }}
+      >
+        Quack! Describe your bug to me.
+      </p>
     </div>
 
-    {/* Duck Image (closer to bubble) */}
-    <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }}>
+    {/* Goose Image */}
+    <div
+      style={{
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+      }}
+    >
       <img
         src="/duck/body.png"
-        alt="Duck"
-        style={{ width: '66%', maxWidth: '340px', marginTop: '-10px', maxHeight: '46vh', height: 'auto' }}
+        alt="Goose"
+        style={{
+          width: '82%',
+          maxWidth: '510px',
+          maxHeight: '66vh',
+          height: 'auto',
+          objectFit: 'contain',
+          marginTop: '-5px',
+        }}
       />
     </div>
   </div>
-)
+);
 
 // 3. Right Panel (The tools and widgets)
 const WorkspacePanel = () => (
