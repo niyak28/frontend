@@ -41,10 +41,22 @@ export default function ScreenCapture({ autoStart = false, onResponse }) {
     formData.append('user_id', DEFAULT_USER_ID);
 
     try {
-      const res = await fetch(`${BASE_URL}/gemini-image/`, { method: 'POST', body: formData });
+      const res = await fetch(`${BASE_URL}/image`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
       onResponse?.(data.output);
+
+      const ttsRes = await fetch(`${BASE_URL}/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: data.output, user_id: DEFAULT_USER_ID }),
+      });
+
+      if (!ttsRes.ok) throw new Error(`TTS error ${ttsRes.status}`);
+      const audioBlob = await ttsRes.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      new Audio(audioUrl).play();
+
     } catch (err) {
       console.error('Image upload error:', err);
       setError('Failed to send screenshot to backend');

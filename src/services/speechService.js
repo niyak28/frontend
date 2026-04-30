@@ -17,7 +17,7 @@ export const speechService = {
     formData.append('image', imageFile);
     formData.append('user_id', DEFAULT_USER_ID);
 
-    return api.post('/gemini-image/', formData, {
+    return api.post('/image', formData, {
       headers: {}, // let the browser set Content-Type with the boundary for multipart
     });
   },
