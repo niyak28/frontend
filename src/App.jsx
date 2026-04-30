@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
 import ScreenCapture from './components/ScreenCapture';
 
@@ -131,7 +131,19 @@ const formatTime = (seconds) => {
   return `${String(minutes).padStart(2, '0')}:${String(leftoverSeconds).padStart(2, '0')}`;
 };
 
-const Header = ({ waterBreakActive, walkBreakActive }) => {
+const formatTotalTime = (seconds) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const leftoverSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(leftoverSeconds).padStart(2, '0')}`;
+  }
+
+  return `${minutes}:${String(leftoverSeconds).padStart(2, '0')}`;
+};
+
+const Header = ({ waterBreakActive, walkBreakActive, iconPrompt }) => {
   const breakActive = waterBreakActive || walkBreakActive;
 
   return (
@@ -140,7 +152,32 @@ const Header = ({ waterBreakActive, walkBreakActive }) => {
         <img src="/icons/logo.png" alt="Logo" style={{ width: '170px' }} />
       </div>
 
-      <div style={{ display: 'flex', gap: '15px', fontSize: '24px' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px',
+          fontSize: '24px',
+        }}
+      >
+        <div
+          style={{
+            minWidth: '290px',
+            textAlign: 'right',
+            color: 'white',
+            fontFamily: 'LazyDog, sans-serif',
+            fontSize: 'clamp(24px, 2.7vw, 46px)',
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            lineHeight: '1',
+            opacity: iconPrompt ? 1 : 0,
+            transition: 'opacity 0.25s ease',
+            transform: 'translateY(-3px)',
+          }}
+        >
+          {iconPrompt}
+        </div>
+
         <img
           src={walkBreakActive ? '/icons/full_walk.png' : '/mt_icons/mt_walk.png'}
           alt="Walk"
@@ -295,7 +332,7 @@ const DuckArea = ({ beakOpen, eyeState, bubbleText, isRecording, onDuckClick }) 
   </div>
 );
 
-const PomodoroTimer = () => {
+const PomodoroTimer = ({ onStudySessionComplete, onTimeSpentTick }) => {
   const STUDY_TIME = 2 * 60;
   const BREAK_TIME = 15;
   const ANNOUNCEMENT_TIME = 1800;
@@ -311,6 +348,8 @@ const PomodoroTimer = () => {
     if (!isRunning || announcement) return;
 
     const timer = setInterval(() => {
+      onTimeSpentTick();
+
       setTimeLeft((previousTime) => {
         if (previousTime > 1) {
           return previousTime - 1;
@@ -319,6 +358,7 @@ const PomodoroTimer = () => {
         clearInterval(timer);
 
         if (mode === 'study') {
+          onStudySessionComplete();
           setAnnouncement('BREAK TIME!');
 
           transitionTimeout.current = setTimeout(() => {
@@ -345,7 +385,7 @@ const PomodoroTimer = () => {
     return () => {
       clearInterval(timer);
     };
-  }, [isRunning, mode, announcement]);
+  }, [isRunning, mode, announcement, onStudySessionComplete, onTimeSpentTick]);
 
   useEffect(() => {
     return () => {
@@ -491,6 +531,63 @@ const PomodoroTimer = () => {
 };
 
 const WorkspacePanel = ({ terminalText, generateDuckResponse, onScreenshotResponse }) => (
+const SessionStats = ({ totalTimeSpent, pomodoroSessions }) => (
+  <div
+    style={{
+      ...styles.widgetBox,
+      position: 'relative',
+      padding: '8px 18px',
+      minHeight: '105px',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+    }}
+  >
+    <h3
+      style={{
+        margin: '0 0 5px 0',
+        color: '#b59b00',
+        fontSize: 'clamp(20px, 1.9vw, 32px)',
+        letterSpacing: '3px',
+        textTransform: 'uppercase',
+        lineHeight: '1',
+      }}
+    >
+      Session Stats
+    </h3>
+
+    <div
+      style={{
+        textAlign: 'left',
+        paddingLeft: '52px',
+        fontSize: 'clamp(15px, 1.25vw, 23px)',
+        letterSpacing: '1.5px',
+        lineHeight: '1.1',
+        textTransform: 'uppercase',
+      }}
+    >
+      <p style={{ margin: '3px 0' }}>
+        Total time spent:{' '}
+        <span style={{ color: '#b3261e' }}>{formatTotalTime(totalTimeSpent)}</span>
+      </p>
+
+      <p style={{ margin: '3px 0' }}>
+        Pomodoro sessions:{' '}
+        <span style={{ color: '#b3261e' }}>{pomodoroSessions}</span>
+      </p>
+    </div>
+  </div>
+);
+
+const WorkspacePanel = ({
+  terminalText,
+  generateDuckResponse,
+  totalTimeSpent,
+  pomodoroSessions,
+  incrementPomodoroSessions,
+  incrementTotalTimeSpent,
+}) => (
   <div style={styles.rightPanelContainer}>
     <div style={styles.topRowWidgets}>
       <div
@@ -503,13 +600,16 @@ const WorkspacePanel = ({ terminalText, generateDuckResponse, onScreenshotRespon
           minHeight: '105px',
         }}
       >
-        <PomodoroTimer />
+        <PomodoroTimer
+          onStudySessionComplete={incrementPomodoroSessions}
+          onTimeSpentTick={incrementTotalTimeSpent}
+        />
       </div>
 
-      <div style={styles.widgetBox}>
-        <h3>Session Stats</h3>
-        <p>Bugs squashed: 0</p>
-      </div>
+      <SessionStats
+        totalTimeSpent={totalTimeSpent}
+        pomodoroSessions={pomodoroSessions}
+      />
     </div>
 
     <div style={styles.bluePanel}>
@@ -539,6 +639,10 @@ const WorkspacePanel = ({ terminalText, generateDuckResponse, onScreenshotRespon
 export default function App() {
   const [waterBreakActive, setWaterBreakActive] = useState(false);
   const [walkBreakActive, setWalkBreakActive] = useState(false);
+  const [iconPrompt, setIconPrompt] = useState('');
+
+  const [totalTimeSpent, setTotalTimeSpent] = useState(0);
+  const [pomodoroSessions, setPomodoroSessions] = useState(0);
 
   const bubbleMessages = [
     'Debug and destress with Sir Ducksworth II',
@@ -566,6 +670,31 @@ export default function App() {
   const typingInterval = useRef(null);
   const bubbleTypingInterval = useRef(null);
   const beakInterval = useRef(null);
+  const iconPromptTimeout = useRef(null);
+
+  const previousIconState = useRef({
+    waterBreakActive: false,
+    walkBreakActive: false,
+    breakActive: false,
+  });
+
+  const incrementPomodoroSessions = useCallback(() => {
+    setPomodoroSessions((previous) => previous + 1);
+  }, []);
+
+  const incrementTotalTimeSpent = useCallback(() => {
+    setTotalTimeSpent((previous) => previous + 1);
+  }, []);
+
+  const showIconPrompt = (message) => {
+    clearTimeout(iconPromptTimeout.current);
+
+    setIconPrompt(message);
+
+    iconPromptTimeout.current = setTimeout(() => {
+      setIconPrompt('');
+    }, 3000);
+  };
 
   useEffect(() => {
     const waterInterval = setInterval(() => {
@@ -589,6 +718,25 @@ export default function App() {
       clearInterval(walkInterval);
     };
   }, []);
+
+  useEffect(() => {
+    const previous = previousIconState.current;
+    const currentBreakActive = waterBreakActive || walkBreakActive;
+
+    if (!previous.walkBreakActive && walkBreakActive) {
+      showIconPrompt('Walk break?');
+    } else if (!previous.waterBreakActive && waterBreakActive) {
+      showIconPrompt('Hydrate!');
+    } else if (previous.breakActive && !currentBreakActive) {
+      showIconPrompt('Lock in!');
+    }
+
+    previousIconState.current = {
+      waterBreakActive,
+      walkBreakActive,
+      breakActive: currentBreakActive,
+    };
+  }, [waterBreakActive, walkBreakActive]);
 
   const generateTextLetterByLetter = (fullText) => {
     clearInterval(typingInterval.current);
@@ -724,6 +872,22 @@ export default function App() {
     };
   }, []);
 
+  const connectSerial = async () => {
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    const reader = port.readable.getReader();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += new TextDecoder().decode(value);
+      if (buffer.includes('DUCK')) {
+        handleDuckClick();
+        buffer = '';
+      }
+    }
+  };
+
   const generateDuckResponse = () => {
     const response =
       'Try running npm install first, then run npm run dev again. If that fails, check whether your package.json has a dev script.';
@@ -754,6 +918,7 @@ export default function App() {
       clearInterval(bubbleTypingInterval.current);
       clearInterval(beakInterval.current);
       clearTimeout(blinkTimeout.current);
+      clearTimeout(iconPromptTimeout.current);
     };
   }, []);
 
@@ -764,7 +929,15 @@ export default function App() {
       <Header
         waterBreakActive={waterBreakActive}
         walkBreakActive={walkBreakActive}
+        iconPrompt={iconPrompt}
       />
+
+      <button
+        onClick={connectSerial}
+        style={{ position: 'fixed', bottom: '12px', right: '12px', fontFamily: 'LazyDog, sans-serif', fontSize: '14px', padding: '6px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer', opacity: 0.6 }}
+      >
+        connect esp32
+      </button>
 
       <main style={styles.mainContent}>
         <DuckArea
@@ -779,6 +952,10 @@ export default function App() {
           terminalText={terminalText}
           generateDuckResponse={generateDuckResponse}
           onScreenshotResponse={generateTextLetterByLetter}
+          totalTimeSpent={totalTimeSpent}
+          pomodoroSessions={pomodoroSessions}
+          incrementPomodoroSessions={incrementPomodoroSessions}
+          incrementTotalTimeSpent={incrementTotalTimeSpent}
         />
       </main>
     </div>
