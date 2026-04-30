@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
+import ScreenCapture from './components/ScreenCapture';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/main';
 const DEFAULT_USER_ID = 1;
@@ -315,7 +316,7 @@ const SessionStats = ({ totalTimeSpent, pomodoroSessions }) => (
   </div>
 );
 
-const WorkspacePanel = ({ terminalText, totalTimeSpent, pomodoroSessions, incrementPomodoroSessions, incrementTotalTimeSpent }) => (
+const WorkspacePanel = ({ terminalText, totalTimeSpent, pomodoroSessions, incrementPomodoroSessions, incrementTotalTimeSpent, onScreenshotResponse }) => (
   <div style={styles.rightPanelContainer}>
     <div style={styles.topRowWidgets}>
       <div style={{ ...styles.widgetBox, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '105px' }}>
@@ -327,6 +328,11 @@ const WorkspacePanel = ({ terminalText, totalTimeSpent, pomodoroSessions, increm
     <div style={styles.bluePanel}>
       <h3>Code/Debug Panel</h3>
       <p>Paste your broken code here...</p>
+    </div>
+
+    <div style={styles.bluePanel}>
+      <h3>Screen Capture</h3>
+      <ScreenCapture onResponse={onScreenshotResponse} />
     </div>
 
     <div style={styles.bluePanel}>
@@ -630,6 +636,7 @@ export default function App() {
           pomodoroSessions={pomodoroSessions}
           incrementPomodoroSessions={incrementPomodoroSessions}
           incrementTotalTimeSpent={incrementTotalTimeSpent}
+          onScreenshotResponse={generateTextLetterByLetter}
         />
       </main>
     </div>
