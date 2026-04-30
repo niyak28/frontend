@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 const styles = {
@@ -38,7 +38,7 @@ const styles = {
     display: 'flex',
     flex: 1,
     padding: '8px',
-    paddingTop: '22px', // this shifts duck + panels down slightly
+    paddingTop: '22px',
     gap: '16px',
     width: '100%',
     boxSizing: 'border-box',
@@ -95,19 +95,41 @@ const styles = {
     color: 'black',
     textAlign: 'center',
   },
+
+  terminalOutput: {
+    width: '100%',
+    minHeight: '70%',
+    backgroundColor: 'transparent',
+    border: 'none',
+    outline: 'none',
+    resize: 'none',
+    textAlign: 'center',
+    color: 'black',
+    fontFamily: 'LazyDog, sans-serif',
+    fontSize: '22px',
+    letterSpacing: '1px',
+    whiteSpace: 'pre-wrap',
+  },
+
+  fakeButton: {
+    marginTop: '10px',
+    backgroundColor: '#fde68a',
+    border: 'none',
+    borderRadius: '10px',
+    padding: '10px 18px',
+    fontFamily: 'LazyDog, sans-serif',
+    fontSize: '18px',
+    cursor: 'pointer',
+  },
 };
 
 const Header = () => (
   <header style={styles.header}>
     <div>
-      <img
-        src="/icons/logo.png"
-        alt="Logo"
-        style={{ width: '170px' }}
-      />
+      <img src="/icons/logo.png" alt="Logo" style={{ width: '170px' }} />
     </div>
 
-    <div style={{ display: 'flex', gap: '15px', fontSize: '24px'}}>
+    <div style={{ display: 'flex', gap: '15px', fontSize: '24px' }}>
       <img src="/icons/full_walk.png" alt="Walk" style={{ width: '80px' }} />
       <img src="/icons/full_water.png" alt="Water" style={{ width: '80px' }} />
       <img src="/icons/full_fire.png" alt="Fire" style={{ width: '80px' }} />
@@ -115,7 +137,7 @@ const Header = () => (
   </header>
 );
 
-const DuckArea = () => (
+const DuckArea = ({ beakOpen, eyeState, bubbleText }) => (
   <div style={styles.leftColumn}>
     <div
       style={{
@@ -151,7 +173,7 @@ const DuckArea = () => (
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'black',
+          color: '#a3c3ffff',
           fontFamily: 'LazyDog, sans-serif',
           textTransform: 'uppercase',
           fontSize: 'clamp(20px, 2vw, 34px)',
@@ -162,35 +184,69 @@ const DuckArea = () => (
           boxSizing: 'border-box',
         }}
       >
-        Quack! Describe your bug to me.
+        {bubbleText}
       </p>
     </div>
 
     <div
       style={{
-        width: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-end',
+        position: 'relative',
+        width: '82%',
+        maxWidth: '510px',
+        maxHeight: '66vh',
+        aspectRatio: '1 / 1.35',
+        marginTop: '-5px',
       }}
     >
-      <img
-        src="/duck/body.png"
-        alt="Goose"
-        style={{
-          width: '82%',
-          maxWidth: '510px',
-          maxHeight: '66vh',
-          height: 'auto',
-          objectFit: 'contain',
-          marginTop: '-5px',
-        }}
-      />
+    <img
+      src="/duck/body.png"
+      alt="Duck body"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        zIndex: 1,
+      }}
+    />
+
+    <img
+      src={`/duck/eyes_${eyeState}.png`}
+      alt="Duck eyes"
+      style={{
+        position: 'absolute',
+        top: '12%',
+        left: '85%',
+        width: '5%',
+        height: 'auto',
+        objectFit: 'contain',
+        zIndex: 2,
+        pointerEvents: 'none',
+        transform: 'translate(-50%, -50%)',
+      }}
+    />
+
+    <img
+      src={beakOpen ? '/duck/beak_open.png' : '/duck/beak_closed.png'}
+      alt="Duck beak"
+      style={{
+        position: 'absolute',
+        top: '16%',
+        left: '97%',
+        width: '19%',
+        height: 'auto',
+        objectFit: 'contain',
+        zIndex: 3,
+        pointerEvents: 'none',
+        transform: 'translate(-50%, -50%)',
+      }}
+    />
     </div>
   </div>
 );
 
-const WorkspacePanel = () => (
+const WorkspacePanel = ({ terminalText, generateDuckResponse }) => (
   <div style={styles.rightPanelContainer}>
     <div style={styles.topRowWidgets}>
       <div style={styles.widgetBox}>
@@ -211,12 +267,145 @@ const WorkspacePanel = () => (
 
     <div style={styles.bluePanel}>
       <h3>Terminal/Command Suggestion</h3>
-      <p>Try running: npm run dev</p>
+
+      <div style={styles.terminalOutput}>
+        {terminalText || 'Try running: npm run dev'}
+      </div>
+
+      <button style={styles.fakeButton} onClick={generateDuckResponse}>
+        Generate duck response
+      </button>
     </div>
   </div>
 );
 
 export default function App() {
+  const bubbleMessages = [
+    'Debug and destress with Sir Ducksworth II',
+    "Keep going duckling, you've got this!",
+    'What the duck!',
+    "Don't let bugs bother you, you're a mighty duck afterall.",
+  ];
+
+  const [bubbleIndex, setBubbleIndex] = useState(0);
+  const [bubbleText, setBubbleText] = useState(bubbleMessages[0]);
+  const [isBubbleTyping, setIsBubbleTyping] = useState(false);
+
+  const [eyeState, setEyeState] = useState('neutral');
+  const blinkTimeout = useRef(null);
+
+  const [terminalText, setTerminalText] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [beakOpen, setBeakOpen] = useState(false);
+
+  const typingInterval = useRef(null);
+  const bubbleTypingInterval = useRef(null);
+  const beakInterval = useRef(null);
+
+  const generateTextLetterByLetter = (fullText) => {
+    clearInterval(typingInterval.current);
+
+    setTerminalText('');
+    setIsGenerating(true);
+
+    let index = 0;
+
+    typingInterval.current = setInterval(() => {
+      setTerminalText(fullText.slice(0, index + 1));
+      index += 1;
+
+      if (index >= fullText.length) {
+        clearInterval(typingInterval.current);
+        setIsGenerating(false);
+      }
+    }, 45);
+  };
+
+  const typeBubbleTextLetterByLetter = (fullText) => {
+    clearInterval(bubbleTypingInterval.current);
+
+    setBubbleText('');
+    setIsBubbleTyping(true);
+    setEyeState('happy');
+
+    let index = 0;
+
+    bubbleTypingInterval.current = setInterval(() => {
+      setBubbleText(fullText.slice(0, index + 1));
+      index += 1;
+
+      if (index >= fullText.length) {
+        clearInterval(bubbleTypingInterval.current);
+        setIsBubbleTyping(false);
+        setEyeState('neutral');
+      }
+    }, 75);
+  };
+
+  useEffect(() => {
+    const bubbleInterval = setInterval(() => {
+      setBubbleIndex((previousIndex) => {
+        const nextIndex = (previousIndex + 1) % bubbleMessages.length;
+        typeBubbleTextLetterByLetter(bubbleMessages[nextIndex]);
+        return nextIndex;
+      });
+    }, 45000);
+
+    return () => {
+      clearInterval(bubbleInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    const blinkInterval = setInterval(() => {
+      if (isBubbleTyping) return;
+
+      setEyeState('closed');
+
+      blinkTimeout.current = setTimeout(() => {
+        setEyeState('neutral');
+      }, 180);
+    }, 5000);
+
+    return () => {
+      clearInterval(blinkInterval);
+      clearTimeout(blinkTimeout.current);
+    };
+  }, [isBubbleTyping]);
+
+  const generateDuckResponse = () => {
+    const response =
+      'Try running npm install first, then run npm run dev again. If that fails, check whether your package.json has a dev script.';
+
+    generateTextLetterByLetter(response);
+  };
+
+  useEffect(() => {
+    const duckIsTalking = isGenerating || isBubbleTyping;
+
+    if (duckIsTalking) {
+      beakInterval.current = setInterval(() => {
+        setBeakOpen((previous) => !previous);
+      }, 160);
+    } else {
+      clearInterval(beakInterval.current);
+      setBeakOpen(false);
+    }
+
+    return () => {
+      clearInterval(beakInterval.current);
+    };
+  }, [isGenerating, isBubbleTyping]);
+
+  useEffect(() => {
+    return () => {
+      clearInterval(typingInterval.current);
+      clearInterval(bubbleTypingInterval.current);
+      clearInterval(beakInterval.current);
+      clearTimeout(blinkTimeout.current);
+    };
+  }, []);
+
   return (
     <div style={styles.appContainer}>
       <div style={styles.background} />
@@ -224,8 +413,16 @@ export default function App() {
       <Header />
 
       <main style={styles.mainContent}>
-        <DuckArea />
-        <WorkspacePanel />
+        <DuckArea
+          beakOpen={beakOpen}
+          eyeState={eyeState}
+          bubbleText={bubbleText}
+        />
+
+        <WorkspacePanel
+          terminalText={terminalText}
+          generateDuckResponse={generateDuckResponse}
+        />
       </main>
     </div>
   );
