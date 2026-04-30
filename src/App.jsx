@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './App.css';
+import ScreenCapture from './components/ScreenCapture';
 
 const styles = {
   appContainer: {
@@ -529,6 +530,7 @@ const PomodoroTimer = ({ onStudySessionComplete, onTimeSpentTick }) => {
   );
 };
 
+const WorkspacePanel = ({ terminalText, generateDuckResponse, onScreenshotResponse }) => (
 const SessionStats = ({ totalTimeSpent, pomodoroSessions }) => (
   <div
     style={{
@@ -613,6 +615,11 @@ const WorkspacePanel = ({
     <div style={styles.bluePanel}>
       <h3>Code/Debug Panel</h3>
       <p>Paste your broken code here...</p>
+    </div>
+
+    <div style={styles.bluePanel}>
+      <h3>Screen Capture</h3>
+      <ScreenCapture onResponse={onScreenshotResponse} />
     </div>
 
     <div style={styles.bluePanel}>
@@ -944,6 +951,7 @@ export default function App() {
         <WorkspacePanel
           terminalText={terminalText}
           generateDuckResponse={generateDuckResponse}
+          onScreenshotResponse={generateTextLetterByLetter}
           totalTimeSpent={totalTimeSpent}
           pomodoroSessions={pomodoroSessions}
           incrementPomodoroSessions={incrementPomodoroSessions}
