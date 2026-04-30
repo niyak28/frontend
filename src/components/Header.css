@@ -1,0 +1,28 @@
+/* Basic header styles for Rubber Ducky app */
+.site-header {
+  padding: 18px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.site-header .container {
+  max-width: 1126px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  margin: 0;
+  color: #fff;
+  font-size: 20px;
+}
+
+.tagline {
+  margin: 0;
+  color: rgba(255,255,255,0.8);
+  font-size: 12px;
+}
