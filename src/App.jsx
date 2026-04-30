@@ -137,7 +137,7 @@ const Header = () => (
   </header>
 );
 
-const DuckArea = ({ beakOpen, eyeState, bubbleText }) => (
+const DuckArea = ({ beakOpen, eyeState, bubbleText, isRecording, onDuckClick }) => (
   <div style={styles.leftColumn}>
     <div
       style={{
@@ -189,6 +189,8 @@ const DuckArea = ({ beakOpen, eyeState, bubbleText }) => (
     </div>
 
     <div
+      onClick={onDuckClick}
+      title={isRecording ? 'Click to stop recording' : 'Click to talk to the duck'}
       style={{
         position: 'relative',
         width: '82%',
@@ -196,6 +198,9 @@ const DuckArea = ({ beakOpen, eyeState, bubbleText }) => (
         maxHeight: '66vh',
         aspectRatio: '1 / 1.35',
         marginTop: '-5px',
+        cursor: 'pointer',
+        filter: isRecording ? 'drop-shadow(0 0 18px rgba(255, 80, 80, 0.85))' : 'none',
+        transition: 'filter 0.2s ease',
       }}
     >
     <img
@@ -242,6 +247,24 @@ const DuckArea = ({ beakOpen, eyeState, bubbleText }) => (
         transform: 'translate(-50%, -50%)',
       }}
     />
+
+    {isRecording && (
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '8%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '18px',
+          height: '18px',
+          borderRadius: '50%',
+          backgroundColor: '#ff4444',
+          zIndex: 4,
+          animation: 'pulse 1s ease-in-out infinite',
+          pointerEvents: 'none',
+        }}
+      />
+    )}
     </div>
   </div>
 );
@@ -297,6 +320,11 @@ export default function App() {
   const [terminalText, setTerminalText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [beakOpen, setBeakOpen] = useState(false);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const streamRef = useRef(null);
 
   const typingInterval = useRef(null);
   const bubbleTypingInterval = useRef(null);
@@ -373,6 +401,68 @@ export default function App() {
     };
   }, [isBubbleTyping]);
 
+  const sendAudioToBackend = async (audioBlob) => {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+
+    // TODO: replace with real backend URL
+    const response = await fetch('/api/voice', { method: 'POST', body: formData });
+    const data = await response.json();
+
+    if (data.text) {
+      generateTextLetterByLetter(data.text);
+    }
+    if (data.audioUrl) {
+      const audio = new Audio(data.audioUrl);
+      audio.play();
+    }
+  };
+
+  const handleDuckClick = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      audioChunksRef.current = [];
+
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+        setEyeState('neutral');
+        typeBubbleTextLetterByLetter('Let me think...');
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        sendAudioToBackend(audioBlob).catch(console.error);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setEyeState('happy');
+      typeBubbleTextLetterByLetter('Listening...');
+    } catch (err) {
+      console.error('Mic access denied:', err);
+      typeBubbleTextLetterByLetter('Mic blocked :(');
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      mediaRecorderRef.current?.stop();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
   const generateDuckResponse = () => {
     const response =
       'Try running npm install first, then run npm run dev again. If that fails, check whether your package.json has a dev script.';
@@ -417,6 +507,8 @@ export default function App() {
           beakOpen={beakOpen}
           eyeState={eyeState}
           bubbleText={bubbleText}
+          isRecording={isRecording}
+          onDuckClick={handleDuckClick}
         />
 
         <WorkspacePanel
