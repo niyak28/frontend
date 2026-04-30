@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
+import ScreenCapture from './components/ScreenCapture';
 
 const styles = {
   appContainer: {
@@ -286,6 +287,11 @@ const WorkspacePanel = ({ terminalText, generateDuckResponse }) => (
     <div style={styles.bluePanel}>
       <h3>Code/Debug Panel</h3>
       <p>Paste your broken code here...</p>
+    </div>
+
+    <div style={styles.bluePanel}>
+      <h3>Screen Capture</h3>
+      <ScreenCapture />
     </div>
 
     <div style={styles.bluePanel}>
