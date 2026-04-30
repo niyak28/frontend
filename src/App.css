@@ -1,3 +1,15 @@
+@font-face {
+  font-family: 'LazyDog';
+  src: url('/fonts/lazydog.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+* {
+  font-family: 'LazyDog', sans-serif;
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;

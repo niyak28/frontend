@@ -1,4 +1,5 @@
 import React from 'react';
+import './App.css';
 
 // --- STYLES ---
 // Using inline styles here for structural purposes so you can see the layout immediately.
@@ -16,20 +17,20 @@ const styles = {
     overflowX: 'hidden',
     overflowY: 'auto',
     color: 'white',
-    fontFamily: 'sans-serif',
+    fontFamily: 'LazyDog, sans-serif',
   },
   background: {
     position: 'fixed',
     inset: 0,
     zIndex: -1,
-    backgroundColor: '#3b4b6b', // Dark blue background that fills viewport
+    backgroundColor: '#3b4b6bff', // Dark blue background that fills viewport
   },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '8px 12px',
-    backgroundColor: '#2a3650',
+    backgroundColor: '#3b4b6bff',
     height: '64px',
     boxSizing: 'border-box',
   },
@@ -95,8 +96,7 @@ const styles = {
 const Header = () => (
   <header style={styles.header}>
     <div>
-      <h2>🦆 WHATTHEDUCK!</h2>
-      <small>DESTRESS YOUR DEBUGGING</small>
+      <img src="/icons/logo.png" alt="Logo" style={{width: '170px', top: '5%' }}></img>
     </div>
     <div style={{ display: 'flex', gap: '15px', fontSize: '24px' }}>
       <img src="/icons/full_walk.png" alt="Walk" style={{ width: '80px' }} />
@@ -114,11 +114,12 @@ const DuckArea = () => (
     <div
       style={{
         position: 'relative',
-        width: '88%',
-        maxWidth: '560px',
+        width: '135%',
+        maxWidth: '860px',
+        marginBottom: '-95px',
+        transform: 'translate(-80px, 30px)',
         aspectRatio: '3 / 1.25',
-        marginBottom: '-35px',
-        transform: 'translate(-45px, 28px)',
+        // marginBottom: '-35px',
       }}
     >
       <img
@@ -133,19 +134,24 @@ const DuckArea = () => (
           display: 'block',
         }}
       />
-
       <p
         style={{
           position: 'absolute',
-          inset: 0,
+          top: '26%',
+          left: '30%',
+          width: '42%',
+          height: '28%',
           margin: 0,
-          padding: '8% 12% 12% 12%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: 'black',
-          fontSize: 'clamp(16px, 2.2vw, 28px)',
-          lineHeight: '1.15',
+          fontFamily: 'LazyDog, sans-serif',
+          textTransform: 'uppercase',
+          fontSize: 'clamp(20px, 2vw, 34px)',
+          letterSpacing: '1px',
+          fontWeight: 'normal',
+          lineHeight: '1.05',
           textAlign: 'center',
           boxSizing: 'border-box',
         }}
