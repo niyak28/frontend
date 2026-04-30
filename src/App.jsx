@@ -718,6 +718,22 @@ export default function App() {
     };
   }, []);
 
+  const connectSerial = async () => {
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    const reader = port.readable.getReader();
+    let buffer = '';
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += new TextDecoder().decode(value);
+      if (buffer.includes('DUCK')) {
+        handleDuckClick();
+        buffer = '';
+      }
+    }
+  };
+
   const generateDuckResponse = () => {
     const response =
       'Try running npm install first, then run npm run dev again. If that fails, check whether your package.json has a dev script.';
@@ -759,6 +775,13 @@ export default function App() {
         waterBreakActive={waterBreakActive}
         walkBreakActive={walkBreakActive}
       />
+
+      <button
+        onClick={connectSerial}
+        style={{ position: 'fixed', bottom: '12px', right: '12px', fontFamily: 'LazyDog, sans-serif', fontSize: '14px', padding: '6px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer', opacity: 0.6 }}
+      >
+        connect esp32
+      </button>
 
       <main style={styles.mainContent}>
         <DuckArea

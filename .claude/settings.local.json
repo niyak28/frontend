@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/parmida/dev/repos/wtd-backend/**)"
+    ]
+  }
+}
