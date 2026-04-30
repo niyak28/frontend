@@ -124,19 +124,44 @@ const styles = {
   },
 };
 
-const Header = () => (
-  <header style={styles.header}>
-    <div>
-      <img src="/icons/logo.png" alt="Logo" style={{ width: '170px' }} />
-    </div>
+const formatTime = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const leftoverSeconds = seconds % 60;
 
-    <div style={{ display: 'flex', gap: '15px', fontSize: '24px' }}>
-      <img src="/icons/full_walk.png" alt="Walk" style={{ width: '80px' }} />
-      <img src="/icons/full_water.png" alt="Water" style={{ width: '80px' }} />
-      <img src="/icons/full_fire.png" alt="Fire" style={{ width: '80px' }} />
-    </div>
-  </header>
-);
+  return `${String(minutes).padStart(2, '0')}:${String(leftoverSeconds).padStart(2, '0')}`;
+};
+
+const Header = ({ waterBreakActive, walkBreakActive }) => {
+  const breakActive = waterBreakActive || walkBreakActive;
+
+  return (
+    <header style={styles.header}>
+      <div>
+        <img src="/icons/logo.png" alt="Logo" style={{ width: '170px' }} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '15px', fontSize: '24px' }}>
+        <img
+          src={walkBreakActive ? '/icons/full_walk.png' : '/mt_icons/mt_walk.png'}
+          alt="Walk"
+          style={{ width: '80px' }}
+        />
+
+        <img
+          src={waterBreakActive ? '/icons/full_water.png' : '/mt_icons/mt_water.png'}
+          alt="Water"
+          style={{ width: '80px' }}
+        />
+
+        <img
+          src={breakActive ? '/mt_icons/mt_fire.png' : '/icons/full_fire.png'}
+          alt="Fire"
+          style={{ width: '80px' }}
+        />
+      </div>
+    </header>
+  );
+};
 
 const DuckArea = ({ beakOpen, eyeState, bubbleText, isRecording, onDuckClick }) => (
   <div style={styles.leftColumn}>
@@ -204,78 +229,281 @@ const DuckArea = ({ beakOpen, eyeState, bubbleText, isRecording, onDuckClick }) 
         transition: 'filter 0.2s ease',
       }}
     >
-    <img
-      src="/duck/body.png"
-      alt="Duck body"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-        zIndex: 1,
-      }}
-    />
-
-    <img
-      src={`/duck/eyes_${eyeState}.png`}
-      alt="Duck eyes"
-      style={{
-        position: 'absolute',
-        top: '12%',
-        left: '85%',
-        width: '5%',
-        height: 'auto',
-        objectFit: 'contain',
-        zIndex: 2,
-        pointerEvents: 'none',
-        transform: 'translate(-50%, -50%)',
-      }}
-    />
-
-    <img
-      src={beakOpen ? '/duck/beak_open.png' : '/duck/beak_closed.png'}
-      alt="Duck beak"
-      style={{
-        position: 'absolute',
-        top: '16%',
-        left: '97%',
-        width: '19%',
-        height: 'auto',
-        objectFit: 'contain',
-        zIndex: 3,
-        pointerEvents: 'none',
-        transform: 'translate(-50%, -50%)',
-      }}
-    />
-
-    {isRecording && (
-      <div
+      <img
+        src="/duck/body.png"
+        alt="Duck body"
         style={{
           position: 'absolute',
-          bottom: '8%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '18px',
-          height: '18px',
-          borderRadius: '50%',
-          backgroundColor: '#ff4444',
-          zIndex: 4,
-          animation: 'pulse 1s ease-in-out infinite',
-          pointerEvents: 'none',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          zIndex: 1,
         }}
       />
-    )}
+
+      <img
+        src={`/duck/eyes_${eyeState}.png`}
+        alt="Duck eyes"
+        style={{
+          position: 'absolute',
+          top: '12%',
+          left: '85%',
+          width: '5%',
+          height: 'auto',
+          objectFit: 'contain',
+          zIndex: 2,
+          pointerEvents: 'none',
+          transform: 'translate(-50%, -50%)',
+        }}
+      />
+
+      <img
+        src={beakOpen ? '/duck/beak_open.png' : '/duck/beak_closed.png'}
+        alt="Duck beak"
+        style={{
+          position: 'absolute',
+          top: '16%',
+          left: '97%',
+          width: '19%',
+          height: 'auto',
+          objectFit: 'contain',
+          zIndex: 3,
+          pointerEvents: 'none',
+          transform: 'translate(-50%, -50%)',
+        }}
+      />
+
+      {isRecording && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '8%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            backgroundColor: '#ff4444',
+            zIndex: 4,
+            animation: 'pulse 1s ease-in-out infinite',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
     </div>
   </div>
 );
 
+const PomodoroTimer = () => {
+  const STUDY_TIME = 2 * 60;
+  const BREAK_TIME = 15;
+  const ANNOUNCEMENT_TIME = 1800;
+
+  const [mode, setMode] = useState('study');
+  const [timeLeft, setTimeLeft] = useState(STUDY_TIME);
+  const [isRunning, setIsRunning] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+
+  const transitionTimeout = useRef(null);
+
+  useEffect(() => {
+    if (!isRunning || announcement) return;
+
+    const timer = setInterval(() => {
+      setTimeLeft((previousTime) => {
+        if (previousTime > 1) {
+          return previousTime - 1;
+        }
+
+        clearInterval(timer);
+
+        if (mode === 'study') {
+          setAnnouncement('BREAK TIME!');
+
+          transitionTimeout.current = setTimeout(() => {
+            setMode('break');
+            setTimeLeft(BREAK_TIME);
+            setAnnouncement('');
+          }, ANNOUNCEMENT_TIME);
+
+          return 0;
+        }
+
+        setAnnouncement('STUDY TIME!');
+
+        transitionTimeout.current = setTimeout(() => {
+          setMode('study');
+          setTimeLeft(STUDY_TIME);
+          setAnnouncement('');
+        }, ANNOUNCEMENT_TIME);
+
+        return 0;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [isRunning, mode, announcement]);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(transitionTimeout.current);
+    };
+  }, []);
+
+  const startPomodoro = () => {
+    setIsRunning(true);
+  };
+
+  const stopPomodoro = () => {
+    setIsRunning(false);
+    setAnnouncement('');
+    clearTimeout(transitionTimeout.current);
+  };
+
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '9px',
+      }}
+    >
+      <div
+        style={{
+          position: 'relative',
+          width: '40%',
+          minWidth: '125px',
+        }}
+      >
+        <img
+          src="/pomo/pomo_clock.png"
+          alt="Pomodoro clock"
+          style={{
+            width: '100%',
+            display: 'block',
+          }}
+        />
+
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#5a3b1f',
+            fontFamily: 'LazyDog, sans-serif',
+            fontSize: announcement ? 'clamp(12px, 1.2vw, 19px)' : 'clamp(22px, 2.2vw, 36px)',
+            letterSpacing: '2px',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            transform: 'translateY(2px)',
+            padding: '0 10px',
+            boxSizing: 'border-box',
+          }}
+        >
+          {announcement || formatTime(timeLeft)}
+        </div>
+      </div>
+
+      <div
+        style={{
+          width: '15%',
+          minWidth: '54px',
+          maxWidth: '76px',
+          height: '80%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0px',
+        }}
+      >
+        <button
+          onClick={startPomodoro}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            margin: 0,
+            marginBottom: '-4px',
+            cursor: 'pointer',
+            width: '100%',
+          }}
+        >
+          <img
+            src="/pomo/pomo_start.png"
+            alt="Start"
+            style={{
+              width: '100%',
+              display: 'block',
+            }}
+          />
+        </button>
+
+        <button
+          onClick={stopPomodoro}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            margin: 0,
+            marginTop: '-4px',
+            cursor: 'pointer',
+            width: '100%',
+          }}
+        >
+          <img
+            src="/pomo/pomo_end.png"
+            alt="Stop"
+            style={{
+              width: '100%',
+              display: 'block',
+            }}
+          />
+        </button>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          color: '#b59b00',
+          fontFamily: 'LazyDog, sans-serif',
+          fontSize: 'clamp(22px, 2.15vw, 36px)',
+          letterSpacing: '3px',
+          lineHeight: '1.05',
+          textAlign: 'center',
+          textTransform: 'uppercase',
+          whiteSpace: 'pre-line',
+          transform: 'translateX(-2px)',
+        }}
+      >
+        {'Pomodoro\nTimer'}
+      </div>
+    </div>
+  );
+};
+
 const WorkspacePanel = ({ terminalText, generateDuckResponse, onScreenshotResponse }) => (
   <div style={styles.rightPanelContainer}>
     <div style={styles.topRowWidgets}>
-      <div style={styles.widgetBox}>
-        <h3>Pomodoro</h3>
-        <p>25:00</p>
+      <div
+        style={{
+          ...styles.widgetBox,
+          padding: '10px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '105px',
+        }}
+      >
+        <PomodoroTimer />
       </div>
 
       <div style={styles.widgetBox}>
@@ -309,6 +537,9 @@ const WorkspacePanel = ({ terminalText, generateDuckResponse, onScreenshotRespon
 );
 
 export default function App() {
+  const [waterBreakActive, setWaterBreakActive] = useState(false);
+  const [walkBreakActive, setWalkBreakActive] = useState(false);
+
   const bubbleMessages = [
     'Debug and destress with Sir Ducksworth II',
     "Keep going duckling, you've got this!",
@@ -335,6 +566,29 @@ export default function App() {
   const typingInterval = useRef(null);
   const bubbleTypingInterval = useRef(null);
   const beakInterval = useRef(null);
+
+  useEffect(() => {
+    const waterInterval = setInterval(() => {
+      setWaterBreakActive(true);
+
+      setTimeout(() => {
+        setWaterBreakActive(false);
+      }, 10000);
+    }, 30000);
+
+    const walkInterval = setInterval(() => {
+      setWalkBreakActive(true);
+
+      setTimeout(() => {
+        setWalkBreakActive(false);
+      }, 15000);
+    }, 50000);
+
+    return () => {
+      clearInterval(waterInterval);
+      clearInterval(walkInterval);
+    };
+  }, []);
 
   const generateTextLetterByLetter = (fullText) => {
     clearInterval(typingInterval.current);
@@ -418,6 +672,7 @@ export default function App() {
     if (data.text) {
       generateTextLetterByLetter(data.text);
     }
+
     if (data.audioUrl) {
       const audio = new Audio(data.audioUrl);
       audio.play();
@@ -506,7 +761,10 @@ export default function App() {
     <div style={styles.appContainer}>
       <div style={styles.background} />
 
-      <Header />
+      <Header
+        waterBreakActive={waterBreakActive}
+        walkBreakActive={walkBreakActive}
+      />
 
       <main style={styles.mainContent}>
         <DuckArea
