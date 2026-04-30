@@ -270,7 +270,7 @@ const DuckArea = ({ beakOpen, eyeState, bubbleText, isRecording, onDuckClick }) 
   </div>
 );
 
-const WorkspacePanel = ({ terminalText, generateDuckResponse }) => (
+const WorkspacePanel = ({ terminalText, generateDuckResponse, onScreenshotResponse }) => (
   <div style={styles.rightPanelContainer}>
     <div style={styles.topRowWidgets}>
       <div style={styles.widgetBox}>
@@ -291,7 +291,7 @@ const WorkspacePanel = ({ terminalText, generateDuckResponse }) => (
 
     <div style={styles.bluePanel}>
       <h3>Screen Capture</h3>
-      <ScreenCapture />
+      <ScreenCapture onResponse={onScreenshotResponse} />
     </div>
 
     <div style={styles.bluePanel}>
@@ -520,6 +520,7 @@ export default function App() {
         <WorkspacePanel
           terminalText={terminalText}
           generateDuckResponse={generateDuckResponse}
+          onScreenshotResponse={generateTextLetterByLetter}
         />
       </main>
     </div>

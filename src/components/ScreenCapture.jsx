@@ -1,16 +1,14 @@
 import React, { useRef, useState, useEffect } from 'react';
+import speechService from '../services/speechService';
 
-export default function ScreenCapture({ autoStart = true, uploadUrl = 'http://localhost:4000/upload' }) {
+export default function ScreenCapture({ autoStart = false, onResponse }) {
   const videoRef = useRef(null);
   const [stream, setStream] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [error, setError] = useState(null);
 
-  // Attempt to auto-start capture on mount when requested. Note: browsers may block automatic
-  // display capture prompts unless triggered by a user gesture.
   useEffect(() => {
     if (!autoStart) return;
-    // fire-and-forget; errors are caught inside startCapture
     startCapture().catch((e) => {
       console.debug('Auto-start capture blocked or failed:', e?.message || e);
     });
@@ -35,6 +33,17 @@ export default function ScreenCapture({ autoStart = true, uploadUrl = 'http://lo
     }
   };
 
+  const handleImageUpload = async (imageBlob) => {
+    const file = new File([imageBlob], 'screenshot.png', { type: 'image/png' });
+    try {
+      const response = await speechService.sendImage(file);
+      onResponse?.(response.output);
+    } catch (err) {
+      console.error('Image upload error:', err);
+      setError('Failed to send screenshot to backend');
+    }
+  };
+
   const takeScreenshot = async () => {
     setError(null);
     const video = videoRef.current;
@@ -48,22 +57,9 @@ export default function ScreenCapture({ autoStart = true, uploadUrl = 'http://lo
 
     canvas.toBlob(async (blob) => {
       if (!blob) return setError('Failed to capture image');
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-
-      // stop sharing after capture
+      setPreviewUrl(URL.createObjectURL(blob));
       stopCapture();
-
-      // send to backend (if configured)
-      try {
-        const fd = new FormData();
-        fd.append('screenshot', blob, 'screenshot.png');
-        const res = await fetch(uploadUrl, { method: 'POST', body: fd });
-        const data = await res.json();
-        console.log('Upload response', data);
-      } catch (err) {
-        console.error('Upload failed', err);
-      }
+      await handleImageUpload(blob);
     }, 'image/png', 0.95);
   };
 
@@ -95,15 +91,4 @@ export default function ScreenCapture({ autoStart = true, uploadUrl = 'http://lo
       {error && <div style={{ color: 'red' }}>{error}</div>}
     </div>
   );
-}
-
-// Auto-start behavior: attempt to start capturing when component mounts if `autoStart` is true.
-// Note: most browsers require a user gesture to show the screen-sharing prompt; auto-start may be blocked.
-export function AutoScreenCaptureWrapper(props) {
-  useEffect(() => {
-    if (props.autoStart === false) return;
-    // No-op; start is triggered inside the component mount via ref if possible.
-  }, [props.autoStart]);
-
-  return <ScreenCapture {...props} />;
 }
